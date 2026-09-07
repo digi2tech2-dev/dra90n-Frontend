@@ -13,6 +13,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import brandLogoDark from '../../assets/logo.webp';
 import brandLogoLight from '../../assets/logo.webp';
+import dragonBackground from '../../assets/payment-warning-dragon-lite.webp';
 import {
   calculateProductPrice,
   formatCurrencyAmount,
@@ -945,7 +946,13 @@ const ProductPurchaseDialog = ({
           </div>
         ) : (
           <>
-            <div className="purchase-dialog-product">
+            <div
+              className="purchase-dialog-product"
+              style={{
+                '--ppd-product-image': product?.image ? `url("${resolveImageUrl(product.image)}")` : 'none',
+                '--ppd-dragon-image': `url("${dragonBackground}")`,
+              }}
+            >
               <div className="purchase-dialog-platform-logo" title="Dra90n STORE">
                 <img className="purchase-dialog-logo-dark" src={brandLogoDark} alt="Dra90n STORE" />
                 <img className="purchase-dialog-logo-light" src={brandLogoLight} alt="Dra90n STORE" />

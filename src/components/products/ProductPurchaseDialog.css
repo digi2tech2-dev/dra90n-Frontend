@@ -1463,6 +1463,38 @@
   }
 }
 
+/* Product and dragon artwork stay contained in the upper purchase section. */
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product {
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1rem;
+  background-image:
+    linear-gradient(90deg, rgb(8 13 20 / 0.94) 0%, rgb(8 13 20 / 0.72) 46%, rgb(8 13 20 / 0.52) 100%),
+    var(--ppd-product-image),
+    var(--ppd-dragon-image);
+  background-position: center, 18% center, center;
+  background-size: cover, 38% auto, cover;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 -30px 40px rgb(8 13 20 / 0.22);
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, rgb(14 116 144 / 0.18), transparent 48%, rgb(245 158 11 / 0.12));
+  pointer-events: none;
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product {
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.96) 0%, rgb(255 255 255 / 0.82) 48%, rgb(255 255 255 / 0.55) 100%),
+    var(--ppd-product-image),
+    var(--ppd-dragon-image);
+  box-shadow: inset 0 0 0 1px rgb(14 116 144 / 0.12), inset 0 -24px 34px rgb(255 255 255 / 0.24);
+}
+
 /* Purchase experience V4 — premium KA-CARD checkout, UI-only. */
 .purchase-dialog-card:not(.is-wallet-flow) {
   width: min(100%, 30rem);
@@ -4392,7 +4424,7 @@
   justify-content: center;
   min-width: 0;
   gap: 0.48rem;
-  padding: 1.1rem 1rem;
+  padding: 1.1rem clamp(0.65rem, 2.5vw, 1rem);
   text-align: center;
 }
 
@@ -4464,23 +4496,24 @@
 }
 
 .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-total-icon {
-  position: absolute;
-  top: 50%;
-  left: 1.05rem;
-  width: 3.8rem;
-  height: 3.8rem;
+  position: static;
+  width: 2.7rem;
+  height: 2.7rem;
+  margin-bottom: 0.1rem;
   color: #5dd867;
   opacity: 0.9;
-  transform: translateY(-50%);
   filter: drop-shadow(0 0 12px rgb(71 211 91 / 0.48));
 }
 
 .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-price {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   color: #f5f8f2;
-  font-size: clamp(1.7rem, 4vw, 2.65rem);
+  font-size: clamp(1.35rem, 4vw, 2.65rem);
   font-weight: 950;
   line-height: 1.08;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   text-shadow: 0 4px 18px rgb(0 0 0 / 0.4);
 }
 
@@ -4493,6 +4526,10 @@
   font-size: 0.82rem;
   font-weight: 950;
   padding: 0.3rem 0.75rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: center;
   box-shadow: 0 0 14px rgb(35 174 83 / 0.18);
 }
 
@@ -4905,4 +4942,142 @@
 .purchase-dialog-overlay .purchase-dialog-backdrop {
   backdrop-filter: blur(8px) saturate(1.05);
   -webkit-backdrop-filter: blur(8px) saturate(1.05);
+}
+
+/* Compact checkout proportions. */
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) {
+  width: min(64vw, 30rem);
+  max-height: min(80dvh, 38rem);
+  border-radius: 1rem;
+  padding: 0.45rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product {
+  grid-template-columns: 3.5rem minmax(0, 1fr) !important;
+  gap: 0.45rem;
+  min-height: 4.2rem;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product-visual,
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-image {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-description {
+  min-height: 2.7rem;
+  margin-bottom: 0.35rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-row {
+  min-height: 6.5rem;
+  margin-top: 0.35rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-actions {
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-primary,
+.purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-secondary {
+  min-height: 2.4rem;
+  border-radius: 0.65rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) {
+    width: min(calc(100vw - 1.25rem), 24rem);
+    max-height: 86dvh;
+    border-radius: 0.9rem;
+    padding: 0.35rem;
+  }
+
+  .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product {
+    grid-template-columns: 4.5rem minmax(0, 1fr) !important;
+    gap: 0.65rem;
+    min-height: 5.5rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product-visual,
+  .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-image {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+
+  .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-row {
+    min-height: 8.8rem;
+  }
+}
+
+/* Reference checkout: keep the same hierarchy in light mode without the dark palette. */
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) {
+  border-color: rgb(15 118 110 / 0.22);
+  background:
+    linear-gradient(145deg, #ffffff 0%, #f8fbff 52%, #f0fdfa 100%) padding-box,
+    linear-gradient(135deg, rgb(14 116 144 / 0.45), rgb(37 99 235 / 0.35), rgb(16 185 129 / 0.42)) border-box;
+  color: #172033;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    0 28px 76px rgb(15 23 42 / 0.18),
+    0 0 30px rgb(14 116 144 / 0.1);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-close {
+  border-color: rgb(14 116 144 / 0.2);
+  background: rgb(255 255 255 / 0.9);
+  color: #155e75;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.12);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-product {
+  border-bottom-color: rgb(14 116 144 / 0.2);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-row {
+  border-color: rgb(14 116 144 / 0.2);
+  background: linear-gradient(145deg, #f0fdfa 0%, #eff6ff 52%, #ffffff 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 18px 38px rgb(14 116 144 / 0.12);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-divider {
+  background: linear-gradient(180deg, transparent, rgb(14 116 144 / 0.28), transparent);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-label,
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-qty .ppd-gold-label {
+  color: #b45309;
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-total .ppd-gold-label {
+  color: #047857;
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-input {
+  background: #ffffff !important;
+  color: #172033 !important;
+  box-shadow: inset 0 1px 5px rgb(15 23 42 / 0.06), 0 0 18px rgb(14 116 144 / 0.1);
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-price {
+  color: #172033;
+  text-shadow: none;
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .ppd-gold-usd {
+  border-color: rgb(5 150 105 / 0.28);
+  background: rgb(16 185 129 / 0.1);
+  color: #047857;
+  box-shadow: none;
+}
+
+:root:not(.dark) .purchase-dialog-card.purchase-dialog-card--reference:not(.is-wallet-flow) .purchase-dialog-field {
+  border-color: rgb(14 116 144 / 0.18);
+  background: linear-gradient(145deg, #f8fbff, #ffffff);
+  box-shadow: 0 16px 34px rgb(15 23 42 / 0.08);
 }
