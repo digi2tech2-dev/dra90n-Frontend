@@ -25,8 +25,7 @@ const isVodafoneCashMethod = (method) => {
 
 const requiresTransactionNumber = (method) => {
   const type = normalizeMethodType(method?.type);
-  const isMobileWallet = ['mobile_wallet', 'e_wallet', 'ewallet'].includes(type);
-  return isMobileWallet && !isVodafoneCashMethod(method);
+  return ['mobile_wallet', 'e_wallet', 'ewallet'].includes(type);
 };
 
 const getReceiverDestination = (method) => {
@@ -76,6 +75,11 @@ const FieldCompletionBadge = ({ complete }) => (
 
 const getSenderDetailRequirement = (method) => {
   const type = normalizeMethodType(method?.type);
+
+  if (isVodafoneCashMethod(method)) {
+    return null;
+  }
+
   if (type === 'mobile_wallet' || type === 'e_wallet' || type === 'ewallet') {
     return {
       field: 'senderWalletNumber',
@@ -213,7 +217,9 @@ const PaymentDetails = ({
     [methodFields]
   );
   const methodInstructions = String(method?.instructions || '').trim();
-  const requiresReceipt = normalizeMethodType(method?.type) !== 'site_wallet';
+  const requiresReceipt =
+    normalizeMethodType(method?.type) !== 'site_wallet'
+    && !isVodafoneCashMethod(method);
   const feePercent = useMemo(() => {
     const value = Number(method?.feePercent);
     if (!Number.isFinite(value)) return 0;
