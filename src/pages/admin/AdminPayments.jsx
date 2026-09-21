@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useToast } from '../../components/ui/Toast';
 import { formatDateTime, formatNumber } from '../../utils/intl';
 import { PERMISSIONS, hasPermission } from '../../utils/permissions';
+import { findPaymentMethodById } from '../../utils/paymentSettings';
 
 const normalizeStatus = (status) => String(status || '').trim().toLowerCase();
 
@@ -50,6 +51,34 @@ const getPaymentChannelLabel = (request) => {
   return request?.paymentChannelName || request?.method || 'محفظة كاش';
 };
 
+/** تحويل رمز الدولة (مثل EG) إلى emoji علم */
+const countryCodeToFlag = (code) => {
+  if (!code || code.length < 2) return '';
+  return [...String(code).toUpperCase().slice(0, 2)]
+    .map((c) => String.fromCodePoint(0x1f1e0 + c.charCodeAt(0) - 65))
+    .join('');
+};
+
+/** معلومات الدولة + مجموعة الدفع + العملة */
+const getCountryGroupInfo = (request, paymentSettings) => {
+  const matchedPayment = findPaymentMethodById(paymentSettings, request?.paymentMethodId, { fallbackToDefault: false });
+  const group = matchedPayment?.group;
+  const currencyCode = String(request?.currencyCode || request?.currency || group?.currency || '').trim().toUpperCase();
+  const fallbackCountryCode = { EGP: 'EG', SAR: 'SA', AED: 'AE', KWD: 'KW', QAR: 'QA', USD: 'US' }[currencyCode] || '';
+  const flag = countryCodeToFlag(request?.transferCountryCode || fallbackCountryCode);
+  const countryName = String(request?.transferCountryName || '').trim();
+  const groupName = String(
+    request?.paymentMethodGroupName
+    || request?.paymentGroupName
+    || group?.name
+    || request?.paymentChannelName
+    || (request?.paymentChannel === 'bank_transfer' ? 'تحويل بنكي' : '')
+    || request?.method
+    || ''
+  ).trim();
+  return { flag, countryName, groupName, currencyCode };
+};
+
 const getSenderDetails = (request) => {
   const details = request?.senderDetails && typeof request.senderDetails === 'object'
     ? request.senderDetails
@@ -76,7 +105,13 @@ const getSenderDetails = (request) => {
     || request?.transactionNumber
     || request?.transactionId
     || request?.paymentReference
+    || request?.operationNumber
+    || request?.operationId
     || request?.referenceNumber
+    || request?.transferNumber
+    || request?.transferReference
+    || request?.transaction?.number
+    || request?.transaction?.id
     || ''
   ).trim();
 
@@ -103,7 +138,7 @@ const AdminPayments = () => {
   const { topups, topupsPagination, topupsSummary, loadTopups, loadTopupsFiltered, getTopupById, updateTopupStatus, updateTopupRequest } = useTopupStore();
   const { user: actor } = useAuthStore();
   const { users, loadUsers } = useAdminStore();
-  const { currencies, loadCurrencies } = useSystemStore();
+  const { currencies, loadCurrencies, paymentSettings, loadPaymentSettings } = useSystemStore();
   const { addToast } = useToast();
   const canConfirmPayments = hasPermission(actor, PERMISSIONS.ADMIN_PAYMENTS);
 
@@ -156,7 +191,8 @@ const AdminPayments = () => {
     fetchDeposits();
     loadUsers({ force: true });
     loadCurrencies();
-  }, [fetchDeposits, loadUsers, loadCurrencies]);
+    loadPaymentSettings({ force: true });
+  }, [fetchDeposits, loadUsers, loadCurrencies, loadPaymentSettings]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -417,24 +453,30 @@ const AdminPayments = () => {
                   <p className="mt-0.5 font-semibold text-[var(--color-text)]">{getPaymentChannelLabel(request)}</p>
                 </div>
                 <div className="rounded-lg bg-[color:rgb(var(--color-surface-rgb)/0.62)] px-2 py-1.5">
-                  <p className="text-[var(--color-text-secondary)]">{senderDetails.label}</p>
-                  <p className="mt-0.5 break-all font-semibold text-[var(--color-text)]">{senderDetails.value}</p>
-                  {senderDetails.transactionNumber ? (
-                    <p className="mt-1 break-all text-[11px] font-semibold text-[var(--color-primary)]">
-                      رقم العملية: {senderDetails.transactionNumber}
-                    </p>
-                  ) : null}
+                  <p className="text-[var(--color-text-secondary)]">رقم العملية</p>
+                  <p className="mt-0.5 break-all font-bold text-[var(--color-primary)]">
+                    {senderDetails.transactionNumber || '-'}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-[color:rgb(var(--color-surface-rgb)/0.62)] px-2 py-1.5">
                   <p className="text-[var(--color-text-secondary)]">المبلغ الفعلي</p>
                   <p className="mt-0.5 font-semibold text-[var(--color-text)]">{actualAmount}</p>
                 </div>
-                <div className="rounded-lg bg-[color:rgb(var(--color-surface-rgb)/0.62)] px-2 py-1.5">
-                  <p className="text-[var(--color-text-secondary)]">الدولة</p>
-                  <p className="mt-0.5 font-semibold text-[var(--color-text)]">
-                    {request.transferCountryName || '-'}{request.transferCountryCode ? ` (${request.transferCountryCode})` : ''}
-                  </p>
-                </div>
+                {(() => {
+                  const cgi = getCountryGroupInfo(request, paymentSettings);
+                  return (
+                    <div className="rounded-lg bg-[color:rgb(var(--color-surface-rgb)/0.62)] px-2 py-1.5">
+                      <p className="text-[var(--color-text-secondary)]">مجموعة الدفع / العملة</p>
+                      <p className="mt-0.5 font-semibold text-[var(--color-text)]">
+                        {cgi.flag ? <span className="me-1">{cgi.flag}</span> : null}
+                        {cgi.groupName || cgi.countryName || '-'}
+                      </p>
+                      {cgi.currencyCode ? (
+                        <p className="mt-0.5 text-[10px] text-[var(--color-text-secondary)]">{cgi.currencyCode}</p>
+                      ) : null}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -484,7 +526,7 @@ const AdminPayments = () => {
                 <TableHead className="text-center">العملة</TableHead>
                 <TableHead className="text-center">المبلغ المطلوب</TableHead>
                 <TableHead className="text-center">المبلغ الفعلي</TableHead>
-                <TableHead className="text-center">بيانات المرسل</TableHead>
+                <TableHead className="text-center">رقم العملية</TableHead>
                 <TableHead className="text-center">الإيصال</TableHead>
                 <TableHead className="text-center">الحالة</TableHead>
                 <TableHead className="text-end">الإجراءات</TableHead>
@@ -509,23 +551,23 @@ const AdminPayments = () => {
                     <div className="text-xs text-gray-500">{request.userEmail || request.userId}</div>
                   </TableCell>
                   <TableCell className="text-center">
-                    {request.transferCountryName || '-'}
-                    {request.transferCountryCode ? <div className="text-xs text-gray-500">{request.transferCountryCode}</div> : null}
+                    {(() => {
+                      const cgi = getCountryGroupInfo(request, paymentSettings);
+                      return (
+                        <>
+                          {cgi.flag ? <span className="me-1 text-base">{cgi.flag}</span> : null}
+                          <span className="font-medium">{cgi.groupName || cgi.countryName || '-'}</span>
+                          {cgi.currencyCode ? <div className="text-xs text-gray-500">{cgi.currencyCode}</div> : null}
+                        </>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-center">{getPaymentChannelLabel(request)}</TableCell>
                   <TableCell className="text-center font-semibold">{currencyCode}</TableCell>
                   <TableCell className="text-center">{formatRequestAmount(request.requestedAmount ?? request.requestedCoins ?? request.amount ?? 0)}</TableCell>
                   <TableCell className="text-center">{request.actualPaidAmount ? formatRequestAmount(request.actualPaidAmount) : '-'}</TableCell>
                   <TableCell className="max-w-[220px] text-center">
-                    <div className="break-all text-sm font-semibold text-[var(--color-text)]">{senderDetails.value}</div>
-                    {senderDetails.value !== '-' ? (
-                      <div className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">{senderDetails.label}</div>
-                    ) : null}
-                    {senderDetails.transactionNumber ? (
-                      <div className="mt-1 break-all text-[11px] font-semibold text-[var(--color-primary)]">
-                        رقم العملية: {senderDetails.transactionNumber}
-                      </div>
-                    ) : null}
+                    <div className="break-all font-bold text-[var(--color-primary)]">{senderDetails.transactionNumber || '-'}</div>
                   </TableCell>
                   <TableCell className="text-center">
                     {request.proofImage ? (

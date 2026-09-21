@@ -215,7 +215,9 @@ const useTopupStore = create((set, get) => ({
         }
 
         const created = await apiClient.topups.create(newTopup);
-        const finalTopup = created || newTopup;
+        // Preserve submitted metadata when an API response omits optional
+        // transaction fields, so the admin can review the operation number.
+        const finalTopup = { ...newTopup, ...(created || {}) };
         set(state => ({
           topups: [finalTopup, ...state.topups],
           topupsLastLoadedAt: Date.now(),

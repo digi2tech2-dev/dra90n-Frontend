@@ -144,6 +144,10 @@ const normaliseSenderDetails = (source = {}) => {
     ? source.senderDetails
     : safeParseJson(source?.senderDetails, null);
   const details = rawDetails && typeof rawDetails === 'object' ? rawDetails : {};
+  const rawPaymentDetails = source?.paymentDetails && typeof source.paymentDetails === 'object'
+    ? source.paymentDetails
+    : safeParseJson(source?.paymentDetails, null);
+  const paymentDetails = rawPaymentDetails && typeof rawPaymentDetails === 'object' ? rawPaymentDetails : {};
   const value = String(
     details.value
     || source.senderWalletAddress
@@ -151,8 +155,37 @@ const normaliseSenderDetails = (source = {}) => {
     || source.transferredFromNumber
     || ''
   ).trim();
+  const transactionNumber = String(
+    details.transactionNumber
+    || details.transactionId
+    || details.paymentReference
+    || details.operationNumber
+    || details.operationId
+    || paymentDetails.transactionNumber
+    || paymentDetails.transactionId
+    || paymentDetails.paymentReference
+    || paymentDetails.operationNumber
+    || paymentDetails.referenceNumber
+    || source.transactionNumber
+    || source.transactionId
+    || source.paymentReference
+    || source.operationNumber
+    || source.operationId
+    || source.referenceNumber
+    || source.transferNumber
+    || source.transferReference
+    || source.transaction?.number
+    || source.transaction?.id
+    || source.payment?.transactionNumber
+    || source.metadata?.transactionNumber
+    || source.metadata?.transactionId
+    || String(source.notes || '').match(/\[transactionNumber:([^\]\r\n]+)\]/i)?.[1]
+    || ''
+  ).trim();
 
-  if (!value) return null;
+  // Some payment methods do not require the sender's wallet number. Keep the
+  // details object when a transaction number exists so admins can still see it.
+  if (!value && !transactionNumber) return null;
 
   const methodType = String(details.methodType || details.type || source.paymentMethodType || '').trim().toLowerCase();
   const field = String(
@@ -165,17 +198,6 @@ const normaliseSenderDetails = (source = {}) => {
       ? 'عنوان المحفظة المحول منها'
       : 'رقم المحفظة المحول منها')
   ).trim();
-  const transactionNumber = String(
-    details.transactionNumber
-    || details.transactionId
-    || details.paymentReference
-    || source.transactionNumber
-    || source.transactionId
-    || source.paymentReference
-    || source.referenceNumber
-    || ''
-  ).trim();
-
   return { methodType, field, label, value, transactionNumber };
 };
 
@@ -1059,9 +1081,9 @@ const normaliseDeposit = (d) => {
     currencyCode: currency,          // alias — AdminPayments reads currencyCode
     exchangeRate,
     paymentMethodId: d.paymentMethodId || '',
-    transactionId: d.transactionId || d.transactionNumber || d.paymentReference || d.referenceNumber || '',
-    transactionNumber: d.transactionNumber || d.transactionId || d.paymentReference || d.referenceNumber || '',
-    paymentReference: d.paymentReference || d.transactionId || d.transactionNumber || d.referenceNumber || '',
+    transactionId: d.transactionId || d.transactionNumber || d.paymentReference || d.operationNumber || d.operationId || d.referenceNumber || d.transferNumber || d.transferReference || d.transaction?.number || d.transaction?.id || '',
+    transactionNumber: d.transactionNumber || d.transactionId || d.paymentReference || d.operationNumber || d.operationId || d.referenceNumber || d.transferNumber || d.transferReference || d.transaction?.number || d.transaction?.id || '',
+    paymentReference: d.paymentReference || d.transactionId || d.transactionNumber || d.operationNumber || d.operationId || d.referenceNumber || d.transferNumber || d.transferReference || d.transaction?.number || d.transaction?.id || '',
     notes: d.notes || '',
     adminNotes: d.adminNotes || '',
     // Transfer proof
@@ -3769,14 +3791,20 @@ const realApi = {
         String(topupData.paymentMethodId || ''),
       );
 
-      const notes = String(topupData.notes || '').trim();
-      if (notes) formData.append('notes', notes);
-
       const transactionId = String(topupData.transactionId || topupData.transactionNumber || topupData.paymentReference || '').trim();
+      const notes = String(topupData.notes || '').trim();
+      // `notes` is a documented, persisted deposit field. Keep a machine-readable
+      // copy here because some API versions discard custom multipart fields.
+      const persistedNotes = transactionId && !/\[transactionNumber:/i.test(notes)
+        ? [notes, `[transactionNumber:${transactionId}]`].filter(Boolean).join('\n')
+        : notes;
+      if (persistedNotes) formData.append('notes', persistedNotes);
+
       if (transactionId) {
         formData.append('transactionId', transactionId);
         formData.append('transactionNumber', transactionId);
         formData.append('paymentReference', transactionId);
+        formData.append('operationNumber', transactionId);
       }
 
       const senderDetails = normaliseSenderDetails(topupData);

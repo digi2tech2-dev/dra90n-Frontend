@@ -13,9 +13,9 @@ let hasFetchedAdminWalletsFromBackendThisSession = false;
 
 const USERS_CACHE_TTL = isRealProvider ? 15 * 1000 : 90 * 1000;
 const WALLETS_CACHE_TTL = isRealProvider ? 15 * 1000 : 60 * 1000;
-// Keep this within the backend's validated pagination range. Sending 500 can
-// make the whole request fail on deployments that cap admin lists at 100.
-const USERS_PAGE_LIMIT = 100;
+// Keep this within the backend's validated pagination range while providing a
+// compact, usable number of users per admin page.
+const USERS_PAGE_LIMIT = 20;
 const USERS_DEFAULT_SORT_BY = 'walletBalance';
 const USERS_DEFAULT_SORT_ORDER = 'desc';
 let usersRequest = null;
@@ -210,6 +210,7 @@ const useAdminStore = create((set, get) => ({
       deletedUsers: [],
       usersPagination: null,
       usersCurrentPage: 1,
+      usersQuery: { search: '', status: '', role: 'customer' },
       usersLastLoadedAt: 0,
       isLoadingUsers: false,
       wallets: [],
@@ -220,17 +221,22 @@ const useAdminStore = create((set, get) => ({
 
       appendAdminActivity: (entry) => appendAdminActivity(set, entry),
 
-      loadUsers: async ({ force = false, page } = {}) => {
+      loadUsers: async ({ force = false, page, search = '', status = '', role = 'customer' } = {}) => {
         const requestedPageCandidate = Number(page ?? get().usersCurrentPage ?? 1);
         const requestedPage = Number.isFinite(requestedPageCandidate) && requestedPageCandidate > 0
           ? Math.floor(requestedPageCandidate)
           : 1;
+        const normalizedSearch = String(search || '').trim();
+        const normalizedStatus = String(status || '').trim();
+        const normalizedRole = String(role || '').trim();
         const { users, usersLastLoadedAt } = get();
         const hasUsers = Array.isArray(users) && users.length > 0;
         const shouldBypassHydratedCache = isRealProvider && !hasFetchedAdminUsersFromBackendThisSession;
         const hasFreshUsers = !shouldBypassHydratedCache
           && hasUsers
           && !page
+          && !normalizedSearch
+          && !normalizedStatus
           && (Date.now() - Number(usersLastLoadedAt || 0) < USERS_CACHE_TTL);
 
         if (!force && hasFreshUsers) {
@@ -248,6 +254,9 @@ const useAdminStore = create((set, get) => ({
           limit: USERS_PAGE_LIMIT,
           sortBy: USERS_DEFAULT_SORT_BY,
           sortOrder: USERS_DEFAULT_SORT_ORDER,
+          search: normalizedSearch,
+          status: normalizedStatus,
+          role: normalizedRole,
         })
           .then(async (result) => {
             // Handle both old (array) and new ({ users, pagination }) response shapes
@@ -265,6 +274,7 @@ const useAdminStore = create((set, get) => ({
               deletedUsers: Array.isArray(nextDeletedUsers) ? nextDeletedUsers : [],
               usersPagination: pagination,
               usersCurrentPage: currentPage,
+              usersQuery: { search: normalizedSearch, status: normalizedStatus, role: normalizedRole },
               usersLastLoadedAt: Date.now(),
               isLoadingUsers: false,
             });
@@ -293,7 +303,7 @@ const useAdminStore = create((set, get) => ({
         const requestedPage = Number.isFinite(requestedPageCandidate) && requestedPageCandidate > 0
           ? Math.floor(requestedPageCandidate)
           : 1;
-        return get().loadUsers({ force: true, page: requestedPage });
+        return get().loadUsers({ force: true, page: requestedPage, ...get().usersQuery });
       },
 
       getUserById: async (userId, { force = false } = {}) => {

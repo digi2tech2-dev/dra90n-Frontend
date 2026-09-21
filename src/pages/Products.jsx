@@ -475,10 +475,10 @@ const Products = () => {
                   active={false}
                   index={index}
                   onSelect={openCatalog}
-                  variant="plain"
+                  variant="product"
                 />
               ))}
-              {displayProducts.map((product) => (
+              {currentCategories.length === 0 && displayProducts.map((product) => (
                 <ProductCardSimple
                   key={product.id}
                   product={product}

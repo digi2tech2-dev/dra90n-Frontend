@@ -927,10 +927,10 @@ const PublicCatalog = () => {
                         active={false}
                         index={index}
                         onSelect={handleCategorySelect}
-                        variant="plain"
+                        variant="product"
                       />
                     ))}
-                    {currentProducts.map((product) => (
+                    {currentCategories.length === 0 && currentProducts.map((product) => (
                       <ProductCardSimple
                         key={product.id}
                         product={product}

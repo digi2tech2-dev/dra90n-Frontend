@@ -10,8 +10,9 @@ const CategoryCard = ({
   variant = 'clean',
 }) => {
   const isPlain = variant === 'plain';
+  const isProductStyle = variant === 'product';
 
-  if (isPlain) {
+  if (isPlain || isProductStyle) {
     const imageSrc = String(category?.image || '').trim();
     const displayName = category?.title || 'Category';
 
@@ -19,19 +20,30 @@ const CategoryCard = ({
       <button
         type="button"
         onClick={() => onSelect(category.id)}
-        className="storefront-category-card storefront-category-card--plain group relative isolate flex w-full origin-center select-none flex-col rounded-[1.4rem] text-start transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.002]"
+        className={cn(
+          'storefront-category-card group relative isolate flex w-full origin-center select-none flex-col text-start transition-all duration-200 ease-out hover:-translate-y-0.5',
+          isProductStyle
+            ? 'storefront-category-card--product storefront-product-card rounded-[1.25rem] p-2'
+            : 'storefront-category-card--plain rounded-[1.4rem] hover:scale-[1.002]'
+        )}
         aria-label={displayName}
         style={{ animation: 'page-fade-in 280ms ease-out both', animationDelay: `${Math.min(index * 35, 210)}ms` }}
       >
-        <div className="storefront-category-media relative overflow-hidden rounded-[1.2rem]">
+        <div className={cn(
+          'storefront-category-media relative overflow-hidden',
+          isProductStyle ? 'storefront-product-media rounded-[1rem]' : 'rounded-[1.2rem]'
+        )}>
           {imageSrc ? (
             <img
               src={imageSrc}
               alt={displayName}
               loading="lazy"
               decoding="async"
-              sizes="(max-width: 640px) 45vw, (max-width: 1024px) 24vw, 18vw"
-              className="relative block aspect-square h-full w-full bg-transparent object-contain object-center transition duration-500 group-hover:scale-[1.05]"
+              sizes={isProductStyle ? '(max-width: 640px) 32vw, (max-width: 1024px) 24vw, 18vw' : '(max-width: 640px) 45vw, (max-width: 1024px) 24vw, 18vw'}
+              className={cn(
+                'relative block aspect-square h-full w-full bg-transparent object-contain object-center transition duration-500 group-hover:scale-[1.05]',
+                isProductStyle && 'p-2 group-hover:scale-[1.04]'
+              )}
             />
           ) : (
             <div
@@ -43,7 +55,12 @@ const CategoryCard = ({
           )}
         </div>
 
-        <h3 className="storefront-category-title mt-2 line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-text)] transition-colors duration-200 group-hover:text-[var(--color-primary)]">
+        <h3 className={cn(
+          'storefront-category-title mt-2 text-[var(--color-text)] transition-colors duration-200 group-hover:text-[var(--color-primary)]',
+          isProductStyle
+            ? 'storefront-product-title line-clamp-1 text-center text-[0.78rem] font-bold leading-5 sm:text-sm'
+            : 'line-clamp-2 text-sm font-semibold leading-5'
+        )}>
           {displayName}
         </h3>
       </button>
